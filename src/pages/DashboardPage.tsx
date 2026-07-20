@@ -123,7 +123,7 @@ export default function DashboardPage() {
                 <p className="text-center text-[11px] font-medium uppercase tracking-[0.28em] text-[#8b1d2d]">
                   Resumen del período
                 </p>
-                <h3 className="mt-3 text-center font-display text-3xl text-slate-900">Ingresos del mes</h3>
+                <h3 className="mt-3 text-center font-display text-3xl text-slate-900">Ingresos Consolidados</h3>
 
                 <div className="mt-6 space-y-4">
                   <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
@@ -156,7 +156,7 @@ export default function DashboardPage() {
 
           <div className="grid gap-4 xl:grid-cols-5">
             <InsightCard
-              title="Ingresos del mes"
+              title="Ingresos Consolidados"
               value={formatCurrency(data.kpis.ingresosMesPen)}
               hint="Monto consolidado del reporte mensual en soles."
               icon={CircleDollarSign}
