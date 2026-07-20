@@ -120,6 +120,10 @@ class IncomeCashFlowService
                 continue;
             }
 
+            if (str_starts_with((string) $milestone->project->project_code, '10')) {
+                continue;
+            }
+
             $rate = $this->resolveRate($period, $milestone->currency_code);
             $amountOrigin = (float) $milestone->valued_amount;
             $amountPen = round($amountOrigin * $rate, 2);
@@ -133,7 +137,7 @@ class IncomeCashFlowService
                     'proyecto' => $milestone->project->project_name,
                     'unidadNegocio' => $milestone->project->business_unit,
                     'cliente' => $milestone->project->client_name,
-                    'estado' => $milestone->project->status_reason,
+                    'estado' => null,
                     'concepto' => $milestone->project->project_name,
                     'hitos' => collect($periodIds)->mapWithKeys(fn ($periodId) => [$periodId => [
                         'periodoId' => $periodId,
@@ -157,6 +161,10 @@ class IncomeCashFlowService
             $cell['montoPen'] = round($cell['montoPen'] + $amountPen, 2);
             $cell['fechaBase'] = $baseDate->toDateString();
             $cell['estadoHito'] = $milestone->milestone_status;
+            $rows[$projectKey]['estado'] = $this->mergeStatuses(
+                $rows[$projectKey]['estado'],
+                $milestone->milestone_status,
+            );
             $cell['detalleHitos'][] = [
                 'codigo' => $milestone->milestone_code,
                 'nombre' => $milestone->milestone_name,
@@ -291,5 +299,23 @@ class IncomeCashFlowService
             $rows->sum(fn (array $row) => (float) ($row['totalPen'] ?? 0)),
             2,
         );
+    }
+
+    private function mergeStatuses(?string $current, ?string $incoming): ?string
+    {
+        $normalizedIncoming = $this->normalizeFilterValue($incoming);
+
+        if (! $normalizedIncoming) {
+            return $current;
+        }
+
+        $statuses = collect(explode(' | ', (string) $current))
+            ->map(fn (string $status) => trim($status))
+            ->filter()
+            ->push($normalizedIncoming)
+            ->unique()
+            ->values();
+
+        return $statuses->isNotEmpty() ? $statuses->implode(' | ') : null;
     }
 }
