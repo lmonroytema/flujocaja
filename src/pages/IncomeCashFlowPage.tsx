@@ -13,6 +13,7 @@ type CashFlowRow = {
   proyecto: string;
   unidadNegocio: string | null;
   cliente: string | null;
+  estado: string | null;
   concepto: string;
   totalPen: number;
   hitos: Record<number, { montoPen: number }>;
@@ -23,6 +24,7 @@ type CashFlowFilters = {
   project: string;
   client: string;
   businessUnit: string;
+  status: string;
   concept: string;
 };
 
@@ -39,6 +41,7 @@ type CashFlowReport = {
   filterOptions: {
     businessUnits: string[];
     clients: string[];
+    statuses: string[];
     concepts: string[];
   };
   totalGeneralPen: number;
@@ -52,6 +55,7 @@ const initialFilters: CashFlowFilters = {
   project: "",
   client: "",
   businessUnit: "",
+  status: "",
   concept: "",
 };
 
@@ -246,14 +250,15 @@ export default function IncomeCashFlowPage() {
 
           <Panel className="space-y-6 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-[1750px] text-sm">
+              <table className="min-w-[1920px] text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-[0.22em] text-white/40">
                     <th className="sticky left-0 z-20 w-[110px] bg-ink-900 px-4 py-3">Código</th>
                     <th className="sticky left-[110px] z-20 w-[260px] bg-ink-900 px-4 py-3">Proyecto</th>
                     <th className="sticky left-[370px] z-20 w-[180px] bg-ink-900 px-4 py-3">Unidad</th>
                     <th className="sticky left-[550px] z-20 w-[240px] bg-ink-900 px-4 py-3">Cliente</th>
-                    <th className="sticky left-[790px] z-20 w-[220px] bg-ink-900 px-4 py-3">Concepto</th>
+                    <th className="sticky left-[790px] z-20 w-[220px] bg-ink-900 px-4 py-3">Estado</th>
+                    <th className="sticky left-[1010px] z-20 w-[220px] bg-ink-900 px-4 py-3">Concepto</th>
                     {report!.periodos.map((periodo) => (
                       <th key={periodo.id} className="px-4 py-3 text-center">
                         {periodo.etiqueta}
@@ -293,6 +298,14 @@ export default function IncomeCashFlowPage() {
                     </th>
                     <th className="sticky left-[790px] z-20 bg-ink-900 px-4 pb-4">
                       <FilterSelect
+                        value={filters.status}
+                        placeholder="Todos"
+                        options={report!.filterOptions.statuses}
+                        onChange={(value) => handleFilterChange("status", value)}
+                      />
+                    </th>
+                    <th className="sticky left-[1010px] z-20 bg-ink-900 px-4 pb-4">
+                      <FilterSelect
                         value={filters.concept}
                         placeholder="Todos"
                         options={report!.filterOptions.concepts}
@@ -315,7 +328,8 @@ export default function IncomeCashFlowPage() {
                         <td className="sticky left-[110px] z-10 bg-ink-900 px-4 py-3">{fila.proyecto}</td>
                         <td className="sticky left-[370px] z-10 bg-ink-900 px-4 py-3">{fila.unidadNegocio ?? "-"}</td>
                         <td className="sticky left-[550px] z-10 bg-ink-900 px-4 py-3">{fila.cliente ?? "-"}</td>
-                        <td className="sticky left-[790px] z-10 bg-ink-900 px-4 py-3">{fila.concepto}</td>
+                        <td className="sticky left-[790px] z-10 bg-ink-900 px-4 py-3">{fila.estado ?? "-"}</td>
+                        <td className="sticky left-[1010px] z-10 bg-ink-900 px-4 py-3">{fila.concepto}</td>
                         {report!.periodos.map((periodo) => (
                           <td key={periodo.id} className="px-4 py-3 text-right">
                             {formatCurrency(fila.hitos[periodo.id]?.montoPen ?? 0)}
@@ -328,7 +342,7 @@ export default function IncomeCashFlowPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={report!.periodos.length + 6} className="py-10 text-center text-white/45">
+                      <td colSpan={report!.periodos.length + 7} className="py-10 text-center text-white/45">
                         No existen filas para los filtros seleccionados.
                       </td>
                     </tr>
@@ -381,6 +395,7 @@ function buildCashFlowQuery({
   if (filters.project) params.set("project", filters.project);
   if (filters.client) params.set("client", filters.client);
   if (filters.businessUnit) params.set("business_unit", filters.businessUnit);
+  if (filters.status) params.set("status", filters.status);
   if (filters.concept) params.set("concept", filters.concept);
 
   return params;
