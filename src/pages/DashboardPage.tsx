@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, BriefcaseBusiness, CircleDollarSign, ReceiptText, Wallet } from "lucide-react";
+import { Link } from "react-router-dom";
 import { api } from "@/utils/api";
 import { formatCurrency } from "@/utils/format";
 import { Panel } from "@/components/ui/Panel";
@@ -155,12 +156,12 @@ export default function DashboardPage() {
                       <p className="mt-1 text-2xl font-semibold text-slate-900">{data.kpis.hitosCobrados}</p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className="w-full rounded-full bg-[#b30f28] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_35px_rgba(179,15,40,0.24)] transition hover:bg-[#970d22]"
+                  <Link
+                    to="/flujo-caja/ingresos"
+                    className="block w-full rounded-full bg-[#b30f28] px-5 py-3 text-center text-sm font-semibold text-white shadow-[0_18px_35px_rgba(179,15,40,0.24)] transition hover:bg-[#970d22]"
                   >
                     Revisar flujo mensual
-                  </button>
+                  </Link>
                   <p className="text-center text-sm text-slate-500">
                     Datos consolidados desde proyectos e hitos importados.
                   </p>
