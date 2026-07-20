@@ -35,11 +35,19 @@ type InsightCardProps = {
   hint: string;
   accent: string;
   icon: typeof CircleDollarSign;
+  className?: string;
 };
 
-function InsightCard({ title, value, hint, accent, icon: Icon }: InsightCardProps) {
+function InsightCard({ title, value, hint, accent, icon: Icon, className }: InsightCardProps) {
   return (
-    <div className="rounded-[26px] border border-white/8 bg-white/[0.04] p-5 shadow-[0_20px_60px_rgba(6,11,18,0.28)]">
+    <div
+      className={[
+        "rounded-[26px] border border-white/8 bg-white/[0.04] p-5 shadow-[0_20px_60px_rgba(6,11,18,0.28)]",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] uppercase tracking-[0.28em] text-white/42">{title}</p>
@@ -72,9 +80,17 @@ export default function DashboardPage() {
       ) : !data ? (
         <div className="space-y-6">
           <div className="h-[380px] animate-pulse rounded-[32px] bg-white/[0.05]" />
-          <div className="grid gap-4 lg:grid-cols-5">
+          <div className="grid gap-4 lg:grid-cols-5 xl:grid-cols-6">
             {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="h-36 animate-pulse rounded-[28px] bg-white/[0.05]" />
+              <div
+                key={index}
+                className={[
+                  "h-36 animate-pulse rounded-[28px] bg-white/[0.05]",
+                  index === 0 ? "xl:col-span-2" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              />
             ))}
           </div>
         </div>
@@ -153,13 +169,14 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <div className="grid gap-4 xl:grid-cols-5">
+          <div className="grid gap-4 xl:grid-cols-6">
             <InsightCard
               title="Ingresos Consolidados"
               value={formatCurrency(data.kpis.ingresosMesPen)}
               hint="Monto consolidado del reporte mensual en soles."
               icon={CircleDollarSign}
               accent="border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+              className="xl:col-span-2"
             />
             <InsightCard
               title="Proyectos con ingreso"
