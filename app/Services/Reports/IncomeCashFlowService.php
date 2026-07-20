@@ -133,6 +133,7 @@ class IncomeCashFlowService
                     'proyecto' => $milestone->project->project_name,
                     'unidadNegocio' => $milestone->project->business_unit,
                     'cliente' => $milestone->project->client_name,
+                    'estado' => $milestone->project->status_reason,
                     'concepto' => $milestone->project->project_name,
                     'hitos' => collect($periodIds)->mapWithKeys(fn ($periodId) => [$periodId => [
                         'periodoId' => $periodId,
@@ -224,6 +225,7 @@ class IncomeCashFlowService
             'project' => $this->normalizeFilterValue($filters['project'] ?? null),
             'client' => $this->normalizeFilterValue($filters['client'] ?? null),
             'business_unit' => $this->normalizeFilterValue($filters['business_unit'] ?? null),
+            'status' => $this->normalizeFilterValue($filters['status'] ?? null),
             'concept' => $this->normalizeFilterValue($filters['concept'] ?? null),
         ];
 
@@ -232,6 +234,7 @@ class IncomeCashFlowService
                 && $this->matchesFilter($row['proyecto'] ?? null, $normalizedFilters['project'])
                 && $this->matchesFilter($row['cliente'] ?? null, $normalizedFilters['client'])
                 && $this->matchesFilter($row['unidadNegocio'] ?? null, $normalizedFilters['business_unit'])
+                && $this->matchesFilter($row['estado'] ?? null, $normalizedFilters['status'])
                 && $this->matchesFilter($row['concepto'] ?? null, $normalizedFilters['concept']);
         });
     }
@@ -241,6 +244,7 @@ class IncomeCashFlowService
         return [
             'businessUnits' => $this->collectUniqueValues($rows, 'unidadNegocio'),
             'clients' => $this->collectUniqueValues($rows, 'cliente'),
+            'statuses' => $this->collectUniqueValues($rows, 'estado'),
             'concepts' => $this->collectUniqueValues($rows, 'concepto'),
         ];
     }

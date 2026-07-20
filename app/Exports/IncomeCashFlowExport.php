@@ -19,11 +19,11 @@ class IncomeCashFlowExport implements FromArray, ShouldAutoSize, WithEvents
         $rows = [];
         $periods = $this->report['periodos'];
 
-        $rows[] = ['', '', '', '', 'Flujo de Caja de Ingresos (S/.)'];
-        $rows[] = ['', '', '', '', $this->monthName((int) $this->report['mes']).' '.$this->report['anio']];
+        $rows[] = ['', '', '', '', '', 'Flujo de Caja de Ingresos (S/.)'];
+        $rows[] = ['', '', '', '', '', $this->monthName((int) $this->report['mes']).' '.$this->report['anio']];
 
-        $headerMonths = ['CODIGO', 'UNIDAD DE NEGOCIO', 'CLIENTE', 'CONCEPTO'];
-        $headerWeeks = ['CODIGO', 'UNIDAD DE NEGOCIO', 'CLIENTE', 'CONCEPTO'];
+        $headerMonths = ['CODIGO', 'UNIDAD DE NEGOCIO', 'CLIENTE', 'ESTADO', 'CONCEPTO'];
+        $headerWeeks = ['CODIGO', 'UNIDAD DE NEGOCIO', 'CLIENTE', 'ESTADO', 'CONCEPTO'];
 
         foreach ($periods as $period) {
             $headerMonths[] = strtoupper($this->monthName((int) $period['mes']).' '.$period['anio']);
@@ -41,6 +41,7 @@ class IncomeCashFlowExport implements FromArray, ShouldAutoSize, WithEvents
                 $row['codigoProyecto'],
                 $row['unidadNegocio'],
                 $row['cliente'],
+                $row['estado'],
                 $row['concepto'],
             ];
 
@@ -52,7 +53,7 @@ class IncomeCashFlowExport implements FromArray, ShouldAutoSize, WithEvents
             $rows[] = $line;
         }
 
-        $totalRow = ['TOTAL GENERAL', '', '', ''];
+        $totalRow = ['TOTAL GENERAL', '', '', '', ''];
 
         foreach ($periods as $period) {
             $totalRow[] = collect($this->report['filas'])->sum(
@@ -71,12 +72,12 @@ class IncomeCashFlowExport implements FromArray, ShouldAutoSize, WithEvents
         return [
             AfterSheet::class => function (AfterSheet $event): void {
                 $sheet = $event->sheet->getDelegate();
-                $columnCount = 5 + count($this->report['periodos']);
+                $columnCount = 6 + count($this->report['periodos']);
                 $lastColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnCount);
 
-                $sheet->mergeCells("E1:{$lastColumn}1");
-                $sheet->mergeCells("E2:{$lastColumn}2");
-                $sheet->freezePane('E5');
+                $sheet->mergeCells("F1:{$lastColumn}1");
+                $sheet->mergeCells("F2:{$lastColumn}2");
+                $sheet->freezePane('F5');
 
                 $sheet->getStyle("A1:{$lastColumn}4")->getFont()->setBold(true);
                 $sheet->getStyle("A3:{$lastColumn}4")->getFill()

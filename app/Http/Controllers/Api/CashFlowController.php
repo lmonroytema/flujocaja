@@ -48,6 +48,7 @@ class CashFlowController extends Controller
             'project' => $this->normalizeFilterValue($request->query('project')),
             'client' => $this->normalizeFilterValue($request->query('client')),
             'business_unit' => $this->normalizeFilterValue($request->query('business_unit')),
+            'status' => $this->normalizeFilterValue($request->query('status')),
             'concept' => $this->normalizeFilterValue($request->query('concept')),
         ];
     }
