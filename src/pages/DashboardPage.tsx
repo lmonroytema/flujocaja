@@ -103,8 +103,7 @@ export default function DashboardPage() {
                   Gestión de flujo de caja e ingresos
                 </h2>
                 <p className="mt-4 max-w-2xl text-lg leading-8 text-white/80">
-                  Consolida proyectos, hitos de cobro y proyección semanal en una experiencia visual inspirada en la
-                  interfaz corporativa compartida.
+                  Consolida proyectos, hitos de cobro y proyección semanal.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <span className="rounded-full border border-white/18 bg-white/14 px-4 py-2 text-sm text-white/86 backdrop-blur-sm">

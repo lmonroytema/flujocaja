@@ -58,7 +58,7 @@ export function AppShell() {
 
       <footer className="border-t border-black/5 bg-white">
         <div className="mx-auto flex max-w-[1600px] flex-col items-center justify-between gap-4 px-6 py-4 text-center text-sm text-slate-500 md:flex-row md:text-left">
-          <p>Flujo de caja de ingresos para Tema Perú, inspirado en la interfaz corporativa de referencia.</p>
+          <p>Flujo de caja de ingresos para Tema Perú.</p>
           <img src="/logo-tema.png" alt="Tema" className="h-8 w-auto object-contain" />
         </div>
       </footer>
