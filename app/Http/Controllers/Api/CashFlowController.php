@@ -19,9 +19,12 @@ class CashFlowController extends Controller
     {
         $year = (int) $request->integer('year', now()->year);
         $month = (int) $request->integer('month', now()->month);
+        $page = max($request->integer('page', 1), 1);
+        $perPage = min(max($request->integer('per_page', 12), 5), 100);
+        $filters = $this->extractFilters($request);
 
         return response()->json(
-            $this->incomeCashFlowService->buildMonthlyReport($year, $month)
+            $this->incomeCashFlowService->buildPaginatedMonthlyReport($year, $month, $filters, $page, $perPage)
         );
     }
 
@@ -29,11 +32,34 @@ class CashFlowController extends Controller
     {
         $year = (int) $request->integer('year', now()->year);
         $month = (int) $request->integer('month', now()->month);
-        $report = $this->incomeCashFlowService->buildMonthlyReport($year, $month);
+        $filters = $this->extractFilters($request);
+        $report = $this->incomeCashFlowService->buildFilteredMonthlyReport($year, $month, $filters);
 
         return Excel::download(
             new IncomeCashFlowExport($report),
             sprintf('flujo-caja-ingresos-%d-%02d.xlsx', $year, $month)
         );
+    }
+
+    private function extractFilters(Request $request): array
+    {
+        return [
+            'code' => $this->normalizeFilterValue($request->query('code')),
+            'project' => $this->normalizeFilterValue($request->query('project')),
+            'client' => $this->normalizeFilterValue($request->query('client')),
+            'business_unit' => $this->normalizeFilterValue($request->query('business_unit')),
+            'concept' => $this->normalizeFilterValue($request->query('concept')),
+        ];
+    }
+
+    private function normalizeFilterValue(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $normalized = trim($value);
+
+        return $normalized !== '' ? $normalized : null;
     }
 }

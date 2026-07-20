@@ -5,6 +5,7 @@ namespace App\Services\Reports;
 use App\Models\CashFlowPeriod;
 use App\Models\PaymentMilestone;
 use Carbon\CarbonImmutable;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class IncomeCashFlowService
@@ -15,6 +16,71 @@ class IncomeCashFlowService
     }
 
     public function buildMonthlyReport(int $year, int $month): array
+    {
+        return $this->buildBaseMonthlyReport($year, $month);
+    }
+
+    public function buildFilteredMonthlyReport(int $year, int $month, array $filters = []): array
+    {
+        $report = $this->buildBaseMonthlyReport($year, $month);
+        $filteredRows = $this->applyRowFilters(collect($report['filas']), $filters)->values();
+        $filteredTotal = $this->sumRows($filteredRows);
+
+        return [
+            ...$report,
+            'filas' => $filteredRows->all(),
+            'totalGeneralPen' => $filteredTotal,
+            'totalGeneralPenOriginal' => $report['totalGeneralPen'],
+            'totalFiltradoPen' => $filteredTotal,
+            'totalFilas' => $filteredRows->count(),
+            'filterOptions' => $this->buildFilterOptions(collect($report['filas'])),
+        ];
+    }
+
+    public function buildPaginatedMonthlyReport(
+        int $year,
+        int $month,
+        array $filters = [],
+        int $page = 1,
+        int $perPage = 15,
+    ): array {
+        $report = $this->buildBaseMonthlyReport($year, $month);
+        $allRows = collect($report['filas']);
+        $filteredRows = $this->applyRowFilters($allRows, $filters)->values();
+        $filteredTotal = $this->sumRows($filteredRows);
+        $currentPage = max($page, 1);
+        $perPage = max($perPage, 1);
+        $paginator = new LengthAwarePaginator(
+            $filteredRows->forPage($currentPage, $perPage)->values()->all(),
+            $filteredRows->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => LengthAwarePaginator::resolveCurrentPath(),
+                'pageName' => 'page',
+            ],
+        );
+
+        return [
+            ...$report,
+            'filas' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+            ],
+            'filterOptions' => $this->buildFilterOptions($allRows),
+            'totalGeneralPen' => $filteredTotal,
+            'totalGeneralPenOriginal' => $report['totalGeneralPen'],
+            'totalFiltradoPen' => $filteredTotal,
+            'totalFilas' => $filteredRows->count(),
+        ];
+    }
+
+    private function buildBaseMonthlyReport(int $year, int $month): array
     {
         $periods = $this->periodService->ensurePeriods($year, $month);
         $periodIds = $periods->pluck('id')->all();
@@ -149,5 +215,77 @@ class IncomeCashFlowService
         $rate = $period->exchangeRates->firstWhere('currency_code', $currencyCode);
 
         return $rate ? (float) $rate->rate_to_pen : 1.0;
+    }
+
+    private function applyRowFilters(Collection $rows, array $filters): Collection
+    {
+        $normalizedFilters = [
+            'code' => $this->normalizeFilterValue($filters['code'] ?? null),
+            'project' => $this->normalizeFilterValue($filters['project'] ?? null),
+            'client' => $this->normalizeFilterValue($filters['client'] ?? null),
+            'business_unit' => $this->normalizeFilterValue($filters['business_unit'] ?? null),
+            'concept' => $this->normalizeFilterValue($filters['concept'] ?? null),
+        ];
+
+        return $rows->filter(function (array $row) use ($normalizedFilters): bool {
+            return $this->matchesFilter($row['codigoProyecto'] ?? null, $normalizedFilters['code'])
+                && $this->matchesFilter($row['proyecto'] ?? null, $normalizedFilters['project'])
+                && $this->matchesFilter($row['cliente'] ?? null, $normalizedFilters['client'])
+                && $this->matchesFilter($row['unidadNegocio'] ?? null, $normalizedFilters['business_unit'])
+                && $this->matchesFilter($row['concepto'] ?? null, $normalizedFilters['concept']);
+        });
+    }
+
+    private function buildFilterOptions(Collection $rows): array
+    {
+        return [
+            'businessUnits' => $this->collectUniqueValues($rows, 'unidadNegocio'),
+            'clients' => $this->collectUniqueValues($rows, 'cliente'),
+            'concepts' => $this->collectUniqueValues($rows, 'concepto'),
+        ];
+    }
+
+    private function collectUniqueValues(Collection $rows, string $key): array
+    {
+        return $rows
+            ->map(fn (array $row) => $row[$key] ?? null)
+            ->filter(fn ($value) => filled($value))
+            ->map(fn ($value) => trim((string) $value))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+    }
+
+    private function matchesFilter(?string $value, ?string $filter): bool
+    {
+        if (! $filter) {
+            return true;
+        }
+
+        return str_contains(
+            mb_strtolower(trim((string) $value)),
+            mb_strtolower($filter),
+        );
+    }
+
+    private function normalizeFilterValue(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $normalized = trim($value);
+
+        return $normalized !== '' ? $normalized : null;
+    }
+
+    private function sumRows(Collection $rows): float
+    {
+        return round(
+            $rows->sum(fn (array $row) => (float) ($row['totalPen'] ?? 0)),
+            2,
+        );
     }
 }
