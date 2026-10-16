@@ -1,7 +1,20 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, FileUp, RefreshCcw } from "lucide-react";
+import { Link } from "react-router-dom";
+import { AlertTriangle, CheckCircle2, FileUp, RefreshCcw } from "lucide-react";
 import { api } from "@/utils/api";
 import { Panel } from "@/components/ui/Panel";
+import { useCashFlowStore } from "@/store/useCashFlowStore";
+
+type ImportSummary = {
+  modo?: string;
+  estados?: Record<string, number>;
+  hitosSinFecha?: number;
+  discrepancias?: number;
+  detalleDiscrepancias?: Array<{ fila: number; proyecto: string; hito: string | null; estadoExcel: string; estadoCalculado: string }>;
+  columnasOpcionalesPresentes?: string[];
+  proyectosEliminados?: number;
+  hitosEliminadosEnCascada?: number;
+};
 
 type ImportBatch = {
   id: number;
@@ -12,8 +25,10 @@ type ImportBatch = {
   inserted_rows: number;
   updated_rows: number;
   skipped_rows: number;
+  deleted_rows?: number;
   imported_at: string;
   errors?: string[];
+  summary?: ImportSummary | null;
 };
 
 type ImportCardProps = {
@@ -26,6 +41,8 @@ type ImportCardProps = {
 function ImportCard({ title, endpoint, description, onImported }: ImportCardProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [result, setResult] = useState<ImportBatch | null>(null);
+  const bumpReportVersion = useCashFlowStore((state) => state.bumpReportVersion);
 
   async function handleFileSelection(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -36,10 +53,17 @@ function ImportCard({ title, endpoint, description, onImported }: ImportCardProp
 
     setLoading(true);
     setMessage("");
+    setResult(null);
 
     try {
       const response = await api.postFile<ImportBatch>(endpoint, file);
-      setMessage(`Importación lista: ${response.inserted_rows} nuevas y ${response.updated_rows} actualizadas.`);
+      setMessage(
+        response.source_type === "milestones"
+          ? `Reemplazo total listo: ${response.deleted_rows ?? 0} hitos anteriores eliminados, ${response.inserted_rows} cargados, ${response.skipped_rows} omitidos.`
+          : `Reemplazo total listo: ${response.inserted_rows} nuevos, ${response.updated_rows} actualizados, ${response.deleted_rows ?? 0} eliminados, ${response.skipped_rows} omitidos.`,
+      );
+      setResult(response);
+      bumpReportVersion();
       onImported();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo importar el archivo.");
@@ -67,7 +91,91 @@ function ImportCard({ title, endpoint, description, onImported }: ImportCardProp
       </label>
 
       {message && <p className="mt-4 text-sm text-white/70">{message}</p>}
+      {result && <ImportResultDetail batch={result} />}
     </Panel>
+  );
+}
+
+function ImportResultDetail({ batch }: { batch: ImportBatch }) {
+  const summary = batch.summary ?? {};
+  const mismatches = summary.detalleDiscrepancias ?? [];
+
+  return (
+    <div className="mt-4 space-y-3 text-sm text-white/70">
+      {summary.estados && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(summary.estados).map(([status, total]) => (
+            <span key={status} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs">
+              {status}: <strong className="text-white">{total}</strong>
+            </span>
+          ))}
+          {summary.hitosSinFecha !== undefined && (
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs">
+              Sin fecha de caja: <strong className="text-white">{summary.hitosSinFecha}</strong>
+            </span>
+          )}
+        </div>
+      )}
+
+      {batch.source_type === "projects" && (summary.hitosEliminadosEnCascada ?? 0) > 0 && (
+        <p className="text-amberx-400">
+          Se eliminaron {summary.hitosEliminadosEnCascada} hitos de proyectos que ya no vienen en el archivo.
+        </p>
+      )}
+
+      {mismatches.length > 0 && (
+        <details className="rounded-2xl border border-amberx-500/30 bg-amberx-500/5 p-3">
+          <summary className="flex cursor-pointer items-center gap-2 text-amberx-400">
+            <AlertTriangle className="h-4 w-4" />
+            {summary.discrepancias} hito(s) con Estatus del Excel distinto al estado calculado por fechas
+          </summary>
+          <div className="mt-3 max-h-60 overflow-auto">
+            <table className="min-w-full text-xs">
+              <thead className="text-left text-white/45">
+                <tr>
+                  <th className="pb-2">Fila</th>
+                  <th className="pb-2">Proyecto</th>
+                  <th className="pb-2">Hito</th>
+                  <th className="pb-2">Estatus Excel</th>
+                  <th className="pb-2">Estado calculado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mismatches.map((item) => (
+                  <tr key={`${item.fila}-${item.hito}`}>
+                    <td className="py-1">{item.fila}</td>
+                    <td className="py-1">{item.proyecto}</td>
+                    <td className="py-1">{item.hito ?? "-"}</td>
+                    <td className="py-1">{item.estadoExcel}</td>
+                    <td className="py-1 text-white">{item.estadoCalculado}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
+
+      {batch.errors && batch.errors.length > 0 && (
+        <details className="rounded-2xl border border-white/10 p-3">
+          <summary className="cursor-pointer">{batch.errors.length} observación(es) de la carga</summary>
+          <ul className="mt-2 max-h-40 list-disc overflow-auto pl-5 text-xs">
+            {batch.errors.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      {batch.source_type === "milestones" && (
+        <Link
+          to="/flujo-caja/ingresos"
+          className="inline-flex items-center gap-2 rounded-2xl border border-mint-400/30 bg-mint-400/10 px-4 py-2 text-white hover:bg-mint-400/20"
+        >
+          Ver flujo de caja actualizado
+        </Link>
+      )}
+    </div>
   );
 }
 
@@ -89,8 +197,8 @@ export default function ImportPage() {
           <p className="text-xs uppercase tracking-[0.3em] text-mint-400">Control de carga</p>
           <h2 className="mt-2 font-display text-4xl text-white">Importaciones Project Hub</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/60">
-            Sube primero el maestro de proyectos y luego el libro de hitos. El sistema hace upsert por identificadores
-            externos y registra trazabilidad por lote.
+            Sube primero el maestro de proyectos y luego el libro de hitos. Cada carga reemplaza por completo la
+            información anterior, de modo que el flujo refleja el estado a la fecha de importación.
           </p>
         </div>
 
@@ -137,6 +245,7 @@ export default function ImportPage() {
                 <th className="pb-3">Hoja</th>
                 <th className="pb-3 text-right">Insertadas</th>
                 <th className="pb-3 text-right">Actualizadas</th>
+                <th className="pb-3 text-right">Eliminadas</th>
                 <th className="pb-3 text-right">Omitidas</th>
               </tr>
             </thead>
@@ -148,6 +257,7 @@ export default function ImportPage() {
                   <td className="py-3">{item.sheet_name}</td>
                   <td className="py-3 text-right">{item.inserted_rows}</td>
                   <td className="py-3 text-right">{item.updated_rows}</td>
+                  <td className="py-3 text-right">{item.deleted_rows ?? 0}</td>
                   <td className="py-3 text-right">{item.skipped_rows}</td>
                 </tr>
               ))}

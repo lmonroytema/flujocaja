@@ -4,12 +4,17 @@ import { api } from "@/utils/api";
 import { Panel } from "@/components/ui/Panel";
 import { DataPagination, type PaginationMeta } from "@/components/ui/DataPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { formatMoney, type CurrencyCode } from "@/utils/format";
 
 type ProjectRow = {
   id: number;
   project_code: string;
   project_name: string;
+  parent_project_code: string | null;
+  parent_project_name: string | null;
   client_name: string | null;
+  currency_code: CurrencyCode;
+  actual_cost_price: string | number | null;
   business_unit: string;
   status_reason: string;
   project_coordinator: string | null;
@@ -154,15 +159,17 @@ export default function ProjectsPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="min-w-[1280px] text-sm">
+            <table className="min-w-[1520px] text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-[0.22em] text-white/40">
                   <th className="pb-3 pr-3">Código</th>
                   <th className="pb-3 pr-3">Proyecto</th>
+                  <th className="pb-3 pr-3">Proyecto origen</th>
                   <th className="pb-3 pr-3">Cliente</th>
                   <th className="pb-3 pr-3">Unidad</th>
                   <th className="pb-3 pr-3">Estado</th>
                   <th className="pb-3 pr-3">Coordinador</th>
+                  <th className="pb-3 pr-3 text-right">Coste real</th>
                   <th className="pb-3 text-right">Hitos</th>
                 </tr>
                 <tr className="border-b border-white/8 text-left text-white/60">
@@ -181,6 +188,7 @@ export default function ProjectsPage() {
                       onChange={(value) => handleFilterChange("project", value)}
                     />
                   </th>
+                  <th className="pb-4 pr-3" />
                   <th className="pb-4 pr-3">
                     <HeaderInput
                       placeholder="Cliente"
@@ -211,6 +219,7 @@ export default function ProjectsPage() {
                       onChange={(value) => handleFilterChange("coordinator", value)}
                     />
                   </th>
+                  <th className="pb-4 pr-3" />
                   <th className="pb-4" />
                 </tr>
               </thead>
@@ -218,7 +227,7 @@ export default function ProjectsPage() {
               <tbody className="divide-y divide-white/6">
                 {loading && !response ? (
                   <tr>
-                    <td colSpan={7} className="py-10 text-center text-white/45">
+                    <td colSpan={9} className="py-10 text-center text-white/45">
                       Cargando proyectos...
                     </td>
                   </tr>
@@ -227,16 +236,35 @@ export default function ProjectsPage() {
                     <tr key={project.id} className="text-white/75 transition hover:bg-white/[0.03]">
                       <td className="py-4 pr-3 font-medium text-white">{project.project_code}</td>
                       <td className="py-4 pr-3">{project.project_name}</td>
+                      <td className="py-4 pr-3">
+                        {project.parent_project_code || project.parent_project_name ? (
+                          <>
+                            <span className="font-medium text-white">{project.parent_project_code}</span>
+                            {project.parent_project_name ? (
+                              <span className="block text-xs text-white/50">{project.parent_project_name}</span>
+                            ) : null}
+                          </>
+                        ) : (
+                          <span className="text-white/35">—</span>
+                        )}
+                      </td>
                       <td className="py-4 pr-3">{project.client_name ?? "Sin cliente"}</td>
                       <td className="py-4 pr-3">{project.business_unit}</td>
                       <td className="py-4 pr-3">{project.status_reason}</td>
                       <td className="py-4 pr-3">{project.project_coordinator ?? "Sin asignar"}</td>
+                      <td className="whitespace-nowrap py-4 pr-3 text-right">
+                        {project.actual_cost_price !== null && project.actual_cost_price !== "" ? (
+                          formatMoney(Number(project.actual_cost_price), project.currency_code)
+                        ) : (
+                          <span className="text-white/35">—</span>
+                        )}
+                      </td>
                       <td className="py-4 text-right font-medium text-white">{project.payment_milestones_count}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="py-10 text-center text-white/45">
+                    <td colSpan={9} className="py-10 text-center text-white/45">
                       No hay proyectos que coincidan con los filtros aplicados.
                     </td>
                   </tr>
