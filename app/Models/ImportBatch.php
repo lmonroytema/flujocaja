@@ -16,13 +16,16 @@ class ImportBatch extends Model
         'inserted_rows',
         'updated_rows',
         'skipped_rows',
+        'deleted_rows',
         'errors',
+        'summary',
         'imported_at',
         'notes',
     ];
 
     protected $casts = [
         'errors' => 'array',
+        'summary' => 'array',
         'imported_at' => 'datetime',
     ];
 

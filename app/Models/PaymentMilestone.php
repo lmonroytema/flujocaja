@@ -27,6 +27,13 @@ class PaymentMilestone extends Model
         'invoice_number',
         'currency_code',
         'actual_collection_date',
+        'estimated_valuation_date',
+        'valuation_approval_date',
+        'invoice_received_date',
+        'derived_status',
+        'status_owner',
+        'status_mismatch',
+        'cash_date',
     ];
 
     protected $casts = [
@@ -37,6 +44,11 @@ class PaymentMilestone extends Model
         'actual_billing_date' => 'date',
         'estimated_payment_date' => 'date',
         'actual_collection_date' => 'date',
+        'estimated_valuation_date' => 'date',
+        'valuation_approval_date' => 'date',
+        'invoice_received_date' => 'date',
+        'cash_date' => 'date',
+        'status_mismatch' => 'boolean',
     ];
 
     public function importBatch(): BelongsTo

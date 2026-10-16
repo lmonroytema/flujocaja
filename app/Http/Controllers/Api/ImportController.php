@@ -8,6 +8,7 @@ use App\Services\Imports\PaymentMilestoneImportService;
 use App\Services\Imports\ProjectImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
 
 class ImportController extends Controller
 {
@@ -35,10 +36,14 @@ class ImportController extends Controller
 
         $file = $request->file('file');
         $storedPath = $file->store('imports/projects', 'local');
-        $batch = $this->projectImportService->import(
-            Storage::disk('local')->path($storedPath),
-            $file->getClientOriginalName(),
-        );
+        try {
+            $batch = $this->projectImportService->import(
+                Storage::disk('local')->path($storedPath),
+                $file->getClientOriginalName(),
+            );
+        } catch (InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
 
         return response()->json($batch, 201);
     }
@@ -51,10 +56,14 @@ class ImportController extends Controller
 
         $file = $request->file('file');
         $storedPath = $file->store('imports/milestones', 'local');
-        $batch = $this->paymentMilestoneImportService->import(
-            Storage::disk('local')->path($storedPath),
-            $file->getClientOriginalName(),
-        );
+        try {
+            $batch = $this->paymentMilestoneImportService->import(
+                Storage::disk('local')->path($storedPath),
+                $file->getClientOriginalName(),
+            );
+        } catch (InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
 
         return response()->json($batch, 201);
     }

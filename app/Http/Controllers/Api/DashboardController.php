@@ -31,7 +31,7 @@ class DashboardController extends Controller
                     'projectCode' => $milestone->project?->project_code,
                     'projectName' => $milestone->project?->project_name,
                     'milestoneName' => $milestone->milestone_name,
-                    'status' => $milestone->milestone_status,
+                    'status' => $milestone->derived_status ?: $milestone->milestone_status,
                     'alert' => $milestone->billing_alert_status,
                     'amount' => (float) $milestone->valued_amount,
                     'currencyCode' => $milestone->currency_code,
@@ -49,12 +49,14 @@ class DashboardController extends Controller
                 'proyectosConIngreso' => count($report['filas']),
                 'proyectosActivos' => Project::query()->whereIn('status_reason', ['Oferta', 'Ejecución', 'Plan'])->count(),
                 'hitosUrgentes' => PaymentMilestone::query()->where('billing_alert_status', '!=', 'N/A')->count(),
-                'hitosCobrados' => PaymentMilestone::query()->where('milestone_status', 'Cobrado')->count(),
+                'hitosCobrados' => PaymentMilestone::query()
+                    ->whereRaw('COALESCE(derived_status, milestone_status) = ?', ['Cobrado'])
+                    ->count(),
             ],
             'proximosCobros' => $upcoming,
             'distribucionPorEstado' => PaymentMilestone::query()
-                ->selectRaw('milestone_status, COUNT(*) as total')
-                ->groupBy('milestone_status')
+                ->selectRaw('COALESCE(derived_status, milestone_status) as milestone_status, COUNT(*) as total')
+                ->groupByRaw('COALESCE(derived_status, milestone_status)')
                 ->get(),
         ]);
     }

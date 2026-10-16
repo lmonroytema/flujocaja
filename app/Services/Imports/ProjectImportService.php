@@ -3,6 +3,7 @@
 namespace App\Services\Imports;
 
 use App\Models\ImportBatch;
+use App\Models\PaymentMilestone;
 use App\Models\Project;
 use App\Support\WorkbookReader;
 use Carbon\Carbon;
@@ -34,6 +35,18 @@ class ProjectImportService
         'Tipos de Existencias',
     ];
 
+    /**
+     * Columnas agregadas al final del Excel de Project Hub. Si vienen llenas se usan en lugar de
+     * separar el «Identificador»; en archivos antiguos (sin ellas) se mantiene el comportamiento previo.
+     */
+    public const OPTIONAL_HEADERS = [
+        'Código del proyecto',
+        'Cliente',
+        'Nombre del proyecto',
+        'Proyecto origen',
+        'Precio de coste real',
+    ];
+
     public function __construct(
         private readonly WorkbookReader $reader,
     ) {
@@ -41,7 +54,12 @@ class ProjectImportService
 
     public function import(string $absolutePath, string $originalFileName): ImportBatch
     {
-        $payload = $this->reader->read($absolutePath, self::HEADERS, ['SP Proyectos Producción']);
+        $payload = $this->reader->read(
+            $absolutePath,
+            self::HEADERS,
+            ['SP Proyectos Producción'],
+            self::OPTIONAL_HEADERS,
+        );
 
         return DB::transaction(function () use ($absolutePath, $originalFileName, $payload) {
             $batch = ImportBatch::create([
@@ -53,6 +71,7 @@ class ProjectImportService
                 'inserted_rows' => 0,
                 'updated_rows' => 0,
                 'skipped_rows' => 0,
+                'deleted_rows' => 0,
                 'errors' => [],
                 'imported_at' => now(),
             ]);
@@ -61,18 +80,25 @@ class ProjectImportService
             $updated = 0;
             $skipped = 0;
             $errors = [];
+            $seenCodes = [];
+            $keptIds = [];
 
             foreach ($payload['rows'] as $index => $row) {
                 $externalUuid = $row['(No modificar) Proyecto'];
                 $identifier = $row['Identificador'];
 
-                if (! $externalUuid || ! $identifier) {
+                $explicitCode = $this->nullableText($row['Código del proyecto'] ?? null);
+
+                if (! $externalUuid || (! $identifier && ! $explicitCode)) {
                     $skipped++;
                     $errors[] = 'Fila '.($index + 2).': faltan identificadores obligatorios.';
                     continue;
                 }
 
-                [$projectCode, $projectName] = $this->splitIdentifier((string) $identifier);
+                [$identifierCode, $identifierName] = $this->splitIdentifier((string) $identifier);
+                $projectCode = $explicitCode ?? $identifierCode;
+                $projectName = $this->nullableText($row['Nombre del proyecto'] ?? null) ?? $identifierName;
+                [$parentCode, $parentName] = $this->splitParentProject($row['Proyecto origen'] ?? null);
 
                 if (! $projectCode) {
                     $skipped++;
@@ -80,8 +106,19 @@ class ProjectImportService
                     continue;
                 }
 
-                $project = Project::firstOrNew(['external_uuid' => (string) $externalUuid]);
+                if (isset($seenCodes[$projectCode])) {
+                    $skipped++;
+                    $errors[] = 'Fila '.($index + 2).": el código de proyecto {$projectCode} está duplicado en el archivo.";
+                    continue;
+                }
+
+                // Se reutiliza el registro existente (por UUID o por código) para conservar su id y no
+                // romper la relación con los hitos (payment_milestones.project_id con borrado en cascada).
+                $project = Project::query()->where('external_uuid', (string) $externalUuid)->first()
+                    ?? Project::query()->where('project_code', $projectCode)->first()
+                    ?? new Project();
                 $isNew = ! $project->exists;
+                $project->external_uuid = (string) $externalUuid;
 
                 $project->fill([
                     'import_batch_id' => $batch->id,
@@ -90,8 +127,11 @@ class ProjectImportService
                     'awarded_at' => $this->parseDate($row['Fecha de adjudicación']),
                     'project_code' => $projectCode,
                     'project_name' => $projectName,
-                    'source_identifier_text' => (string) $identifier,
-                    'client_name' => $row['Cliente contratante'],
+                    'source_identifier_text' => (string) ($identifier ?? $projectCode.'; '.$projectName),
+                    'client_name' => $this->nullableText($row['Cliente'] ?? null) ?? $row['Cliente contratante'],
+                    'parent_project_code' => $parentCode,
+                    'parent_project_name' => $parentName,
+                    'actual_cost_price' => $this->parseDecimal($row['Precio de coste real'] ?? null),
                     'status_reason' => (string) ($row['Razón para el estado'] ?? ''),
                     'business_unit' => (string) ($row['Unidad de negocio propietaria'] ?? ''),
                     'currency_code' => $this->normalizeCurrency($row['Moneda']),
@@ -109,14 +149,31 @@ class ProjectImportService
                 ]);
                 $project->save();
 
+                $seenCodes[$projectCode] = true;
+                $keptIds[] = $project->id;
                 $isNew ? $inserted++ : $updated++;
             }
+
+            if ($keptIds === []) {
+                throw new \InvalidArgumentException('El archivo no contiene proyectos válidos; no se reemplazó la información.');
+            }
+
+            // Reemplazo total: los proyectos que ya no vienen en el archivo se eliminan
+            // (sus hitos se eliminan en cascada por la llave foránea).
+            $removedMilestones = PaymentMilestone::query()->whereNotIn('project_id', $keptIds)->count();
+            $deleted = Project::query()->whereNotIn('id', $keptIds)->delete();
 
             $batch->update([
                 'inserted_rows' => $inserted,
                 'updated_rows' => $updated,
                 'skipped_rows' => $skipped,
+                'deleted_rows' => $deleted,
                 'errors' => $errors,
+                'summary' => [
+                    'modo' => 'reemplazo_total',
+                    'proyectosEliminados' => $deleted,
+                    'hitosEliminadosEnCascada' => $removedMilestones,
+                ],
             ]);
 
             return $batch->fresh();
@@ -133,6 +190,39 @@ class ProjectImportService
         return [$parts[0] ?: null, $parts[1] ?? $identifier];
     }
 
+    /**
+     * «Proyecto origen» llega como «63713; Evaluacion Ambiental Marina y Suelos» o vacío.
+     *
+     * @return array{0: string|null, 1: string|null}
+     */
+    private function splitParentProject(mixed $value): array
+    {
+        $text = $this->nullableText($value);
+
+        if ($text === null) {
+            return [null, null];
+        }
+
+        if (! str_contains($text, ';')) {
+            return preg_match('/^\d+$/', $text) ? [$text, null] : [null, $text];
+        }
+
+        [$code, $name] = array_map('trim', explode(';', $text, 2));
+
+        return [$code !== '' ? $code : null, $name !== '' ? $name : null];
+    }
+
+    private function nullableText(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $text = trim((string) $value);
+
+        return $text === '' ? null : $text;
+    }
+
     private function normalizeCurrency(mixed $currency): string
     {
         return str_contains(mb_strtolower((string) $currency), 'sol') ? 'PEN' : 'USD';
@@ -142,6 +232,11 @@ class ProjectImportService
     {
         if ($value === null || $value === '') {
             return null;
+        }
+
+        if (is_string($value)) {
+            // Celdas con formato de miles («12,345.60») llegan como texto.
+            $value = str_replace(',', '', $value);
         }
 
         return round((float) $value, 2);

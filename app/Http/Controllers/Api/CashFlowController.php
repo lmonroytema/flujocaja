@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Exports\IncomeCashFlowExport;
+use App\Exports\WeeklyCashFlowExport;
+use App\Services\Reports\CashFlowSummaryService;
 use App\Services\Reports\IncomeCashFlowService;
+use App\Services\Reports\WeeklyCashFlowService;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 
@@ -12,7 +15,70 @@ class CashFlowController extends Controller
 {
     public function __construct(
         private readonly IncomeCashFlowService $incomeCashFlowService,
+        private readonly WeeklyCashFlowService $weeklyCashFlowService,
+        private readonly CashFlowSummaryService $cashFlowSummaryService,
     ) {
+    }
+
+    /**
+     * Flujo de caja consolidado en PEN por semana: saldo en bancos, ingresos y gastos.
+     */
+    public function summary(Request $request)
+    {
+        return response()->json(
+            $this->cashFlowSummaryService->build($this->extractRange($request))
+        );
+    }
+
+    /**
+     * Flujo semanal por proyecto (rango de meses o todo el proyecto), montos separados por moneda.
+     */
+    public function weekly(Request $request)
+    {
+        $page = max($request->integer('page', 1), 1);
+        $perPage = min(max($request->integer('per_page', 25), 5), 500);
+
+        return response()->json(
+            $this->weeklyCashFlowService->build(
+                $this->extractRange($request),
+                $this->extractWeeklyFilters($request),
+                $page,
+                $perPage,
+            )
+        );
+    }
+
+    public function weeklyExport(Request $request)
+    {
+        $report = $this->weeklyCashFlowService->build(
+            $this->extractRange($request),
+            $this->extractWeeklyFilters($request),
+        );
+
+        return Excel::download(
+            new WeeklyCashFlowExport($report),
+            sprintf('flujo-caja-semanal-%s-a-%s.xlsx', $report['desde'], $report['hasta'])
+        );
+    }
+
+    private function extractRange(Request $request): array
+    {
+        return [
+            'from' => $this->normalizeFilterValue($request->query('from')),
+            'to' => $this->normalizeFilterValue($request->query('to')),
+            'scope' => $this->normalizeFilterValue($request->query('scope')),
+        ];
+    }
+
+    private function extractWeeklyFilters(Request $request): array
+    {
+        return [
+            ...$this->extractFilters($request),
+            'coordinator' => $this->normalizeFilterValue($request->query('coordinator')),
+            'project_id' => $request->filled('project_id') ? $request->integer('project_id') : null,
+            'mismatch' => $request->boolean('mismatch'),
+            'include_undated' => $request->has('include_undated') ? $request->boolean('include_undated') : true,
+        ];
     }
 
     public function income(Request $request)
