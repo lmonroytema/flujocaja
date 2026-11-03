@@ -1,0 +1,251 @@
+1
+00:00:00,000 --> 00:00:08,000
+Flujo Caja · FC-HUB
+
+2
+00:00:08,920 --> 00:00:16,920
+Cuatro perfiles de acceso
+
+3
+00:00:35,320 --> 00:00:43,320
+Esta es la pantalla de ingreso. Aquí se presentan los perfiles de acceso de la plataforma.
+
+4
+00:00:44,880 --> 00:00:49,680
+A la derecha está el formulario «Acceso seguro» y el enlace «Olvidé mi contraseña».
+
+5
+00:00:49,680 --> 00:00:56,360
+Si olvidas tu contraseña, el sistema te envía un código de restablecimiento al correo.
+
+6
+00:00:56,360 --> 00:01:04,360
+Administrador
+
+7
+00:01:13,160 --> 00:01:19,920
+Ingresa tu correo corporativo y tu contraseña en el panel «Acceso seguro».
+
+8
+00:01:19,920 --> 00:01:25,560
+Con doble autenticación activa, el sistema envía un código de 6 caracteres a tu correo.
+
+9
+00:01:25,560 --> 00:01:32,240
+Escribe el código recibido y pulsa «Verificar y continuar».
+
+10
+00:01:32,240 --> 00:01:40,240
+El administrador ve dos opciones exclusivas en el menú: «API compras» y «Usuarios».
+
+11
+00:01:40,600 --> 00:01:48,600
+En «Usuarios» se listan las cuentas del sistema con su perfil y estado de seguridad.
+
+12
+00:01:49,080 --> 00:01:55,920
+Para crear un usuario: nombre, correo y perfil (admin, directivo, finanzas u operaciones).
+
+13
+00:01:55,920 --> 00:02:01,440
+El usuario nuevo deberá restablecer su contraseña con un código en su primer ingreso.
+
+14
+00:02:01,440 --> 00:02:09,440
+Desde la lista puedes cambiar el perfil, activar o desactivar la doble autenticación (2FA) y usar «Restablecer».
+
+15
+00:02:10,840 --> 00:02:17,800
+En «API compras» se registra la conexión con el sistema de Gestión de Compras.
+
+16
+00:02:17,800 --> 00:02:23,960
+Indica la Base URL y el Public Token (aquí usamos una API simulada de pruebas).
+
+17
+00:02:23,960 --> 00:02:30,160
+«Probar conexión» valida el acceso con los datos escritos antes de guardarlos.
+
+18
+00:02:30,160 --> 00:02:38,160
+«Guardar configuración» almacena la URL y el token de forma segura (el token no se vuelve a mostrar).
+
+19
+00:02:39,520 --> 00:02:45,480
+En «Mi seguridad» cualquier usuario puede cambiar su contraseña y activar o desactivar su 2FA.
+
+20
+00:02:45,480 --> 00:02:51,000
+Para terminar, usa siempre el botón «Salir» de la esquina superior derecha.
+
+21
+00:02:51,000 --> 00:02:59,000
+Finanzas
+
+22
+00:03:06,600 --> 00:03:14,600
+Ingresa tu correo corporativo y tu contraseña en el panel «Acceso seguro».
+
+23
+00:03:15,880 --> 00:03:22,440
+El Dashboard resume los ingresos del mes, proyectos activos, hitos urgentes y cobrados.
+
+24
+00:03:22,440 --> 00:03:29,720
+Más abajo aparecen los próximos cobros y alertas de facturación.
+
+25
+00:03:29,720 --> 00:03:37,720
+En «Importaciones» se cargan los Excel exportados de Project Hub: primero proyectos y luego hitos.
+
+26
+00:03:37,880 --> 00:03:45,880
+Al seleccionar el archivo se procesa y se muestra el resultado: filas insertadas, actualizadas u omitidas.
+
+27
+00:03:46,080 --> 00:03:52,160
+La importación de hitos reemplaza la anterior y vincula cada hito con su proyecto.
+
+28
+00:03:52,160 --> 00:04:00,160
+El historial registra cada carga con fecha, archivo y resumen.
+
+29
+00:04:00,440 --> 00:04:08,120
+«Flujo de caja» muestra una fila por proyecto con sus hitos ubicados por semana y agrupados por mes.
+
+30
+00:04:08,120 --> 00:04:14,520
+Usa los períodos rápidos (mes actual, 3, 6 o 12 meses) o un rango personalizado.
+
+31
+00:04:14,520 --> 00:04:20,160
+Los indicadores muestran el total del período por moneda y los montos sin fecha de caja.
+
+32
+00:04:20,160 --> 00:04:27,280
+«Exportar Excel» descarga el flujo con los filtros aplicados.
+
+33
+00:04:27,280 --> 00:04:35,280
+En «Tipos de cambio» se registra el tipo de cambio USD → PEN de cada semana; se guarda al salir del campo.
+
+34
+00:04:36,920 --> 00:04:44,640
+«Gastos compras» consulta la API de Gestión de Compras: compromisos, facturado y pagado por semana.
+
+35
+00:04:44,640 --> 00:04:52,640
+Puedes filtrar por fechas, proyecto, categoría y etapa.
+
+36
+00:04:54,960 --> 00:05:02,560
+En «Finanzas órdenes» se consulta una orden de compra o servicio por su número.
+
+37
+00:05:02,560 --> 00:05:10,560
+Se muestran el monto comprometido, facturado, pagado y los saldos pendientes.
+
+38
+00:05:12,000 --> 00:05:18,200
+Para registrar una factura: fecha, importe y número de factura; luego «Agregar facturación».
+
+39
+00:05:18,200 --> 00:05:23,680
+Del mismo modo se registran los pagos; cada registro puede editarse o eliminarse.
+
+40
+00:05:23,680 --> 00:05:28,920
+Para terminar, usa siempre el botón «Salir» de la esquina superior derecha.
+
+41
+00:05:28,960 --> 00:05:36,960
+Directivo
+
+42
+00:05:45,000 --> 00:05:53,000
+Ingresa tu correo corporativo y tu contraseña en el panel «Acceso seguro».
+
+43
+00:05:55,600 --> 00:06:01,120
+El perfil Directivo ve el mismo menú operativo, sin «Usuarios» ni «API compras».
+
+44
+00:06:01,120 --> 00:06:09,120
+El Dashboard ofrece la lectura ejecutiva: ingresos del mes, proyectos con ingreso y alertas.
+
+45
+00:06:16,360 --> 00:06:23,960
+Con «Próximos 12 meses» la vista adaptativa agrupa por mes o trimestre para verlo todo en pantalla.
+
+46
+00:06:23,960 --> 00:06:31,920
+Haz clic en el encabezado de un período para ver el detalle de sus semanas.
+
+47
+00:06:31,920 --> 00:06:39,920
+«Proyectos» lista la cartera importada con cliente, unidad, moneda, avance y margen.
+
+48
+00:06:46,960 --> 00:06:52,120
+En «Gastos compras» el directivo revisa los egresos semanales por proyecto y categoría.
+
+49
+00:06:52,120 --> 00:06:57,400
+Para terminar, usa siempre el botón «Salir» de la esquina superior derecha.
+
+50
+00:06:57,400 --> 00:07:05,400
+Operaciones
+
+51
+00:07:13,360 --> 00:07:21,240
+En el primer ingreso, el sistema pide restablecer la contraseña antes de entrar.
+
+52
+00:07:21,240 --> 00:07:28,960
+Se abre esta ventana y llega un código de restablecimiento al correo.
+
+53
+00:07:28,960 --> 00:07:34,160
+Escribe el código y tu nueva contraseña dos veces; luego pulsa «Continuar».
+
+54
+00:07:34,160 --> 00:07:42,160
+Listo: con la contraseña actualizada ya puedes conectarte normalmente.
+
+55
+00:07:45,280 --> 00:07:52,280
+Operaciones valida la cartera en «Proyectos»: cliente, unidad de negocio, coordinador y estado.
+
+56
+00:07:52,280 --> 00:08:00,280
+Con los filtros se acota la lista, por ejemplo por coordinador de proyecto.
+
+57
+00:08:01,960 --> 00:08:09,960
+En «Flujo de caja», la leyenda de colores indica el estado de cada hito: de «No iniciado» a «Cobrado».
+
+58
+00:08:12,560 --> 00:08:20,560
+«Solo proyectos con discrepancias» ayuda a revisar hitos cuyo estado no coincide con sus fechas.
+
+59
+00:08:23,640 --> 00:08:30,320
+En «Mi seguridad» puedes cambiar tu contraseña o activar la doble autenticación.
+
+60
+00:08:30,320 --> 00:08:35,920
+Con 2FA activa, cada ingreso pedirá además un código enviado a tu correo.
+
+61
+00:08:35,920 --> 00:08:41,560
+Para terminar, usa siempre el botón «Salir» de la esquina superior derecha.
+
+62
+00:08:41,600 --> 00:08:49,600
+¿Qué ve cada perfil?
+
+63
+00:09:02,840 --> 00:09:10,840
+¡Gracias!

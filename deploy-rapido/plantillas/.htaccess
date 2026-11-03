@@ -1,0 +1,18 @@
+Options -Indexes
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Sirve archivos y carpetas reales del frontend sin redireccion adicional.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Envia la API de Laravel al backend publicado dentro de public_html/backend/public.
+    RewriteRule ^(api|sanctum|up)(/.*)?$ backend/public/$1$2 [QSA,L]
+    RewriteRule ^storage/(.*)$ backend/public/storage/$1 [QSA,L]
+
+    # Fallback SPA para React Router.
+    RewriteRule ^ index.html [L]
+</IfModule>

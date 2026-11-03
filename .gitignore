@@ -1,0 +1,43 @@
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+deploy-rapido/plantillas/.env.produccion
+
+# Dependencias y builds (backend/.gitignore y frontend/.gitignore cubren el resto)
+node_modules/
+vendor/
+frontend/dist/
+*.tsbuildinfo
+
+# Paquetes y respaldos de despliegue (se regeneran con deploy-rapido/GENERAR.bat)
+*.zip
+deploy-rapido/SUBIR/
+deploy-hostinger/
+deploy-hostinger-2026-10-14/
+deploy-parche-2026-10-16/
+
+# Archivos de negocio con datos reales (importaciones y salidas de Excel)
+Importaciones/
+Destino/
+*.xlsx
+*.xlsm
+*.xls
+!video-demo/datos-prueba/*.xlsx
+
+# Video demo: salidas generadas
+video-demo/runtime/
+*.mp4
+*.wav
+
+# Documentos generados
+*.docx
+
+# Herramientas y editores
+.trae/
+.claude/settings.local.json
+.idea/
+.vscode/
+*.log
+.DS_Store
+Thumbs.db
