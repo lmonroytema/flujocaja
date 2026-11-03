@@ -7,6 +7,8 @@ deploy-rapido/plantillas/.env.produccion
 # Dependencias y builds (backend/.gitignore y frontend/.gitignore cubren el resto)
 node_modules/
 vendor/
+backend/.composer-cache/
+backend/.composer-home/
 frontend/dist/
 *.tsbuildinfo
 
